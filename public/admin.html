@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理后台 - 校园食堂评价</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* ===== 侧边栏 ===== */
+    .sidebar {
+      width: 220px;
+      background: #1e1f2e;
+      min-height: 100vh;
+      position: fixed;
+      left: 0; top: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 50;
+    }
+    .sidebar-logo {
+      padding: 24px 20px 20px;
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sidebar-logo span { font-size: 22px; }
+    .sidebar-admin {
+      padding: 14px 20px;
+      font-size: 13px;
+      color: rgba(255,255,255,.45);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .sidebar-admin strong { color: rgba(255,255,255,.8); display: block; margin-bottom: 2px; }
+    .nav-menu { flex: 1; padding: 12px 0; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 20px;
+      font-size: 14px;
+      color: rgba(255,255,255,.55);
+      cursor: pointer;
+      transition: all .2s;
+      border-left: 3px solid transparent;
+    }
+    .nav-item:hover { color: #fff; background: rgba(255,255,255,.05); }
+    .nav-item.active { color: #fff; background: rgba(99,102,241,.25); border-left-color: #6366f1; }
+    .nav-item .icon { font-size: 18px; width: 22px; text-align: center; }
+    .sidebar-footer { padding: 16px 20px; }
+    .btn-logout {
+      width: 100%;
+      padding: 10px;
+      background: rgba(255,255,255,.08);
+      border: none;
+      border-radius: 10px;
+      color: rgba(255,255,255,.6);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-logout:hover { background: rgba(239,68,68,.2); color: #ef4444; }
+
+    /* ===== 主内容 ===== */
+    .main {
+      margin-left: 220px;
+      flex: 1;
+      min-height: 100vh;
+    }
+    .topbar {
+      background: #fff;
+      height: 56px;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .topbar-title { font-size: 16px; font-weight: 700; color: #222; }
+    .topbar-right { font-size: 13px; color: #888; }
+    .content { padding: 24px 28px; }
+
+    /* ===== 统计卡片 ===== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px 22px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    }
+    .stat-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .stat-icon.orange { background: #fff4ee; }
+    .stat-icon.blue   { background: #eff6ff; }
+    .stat-icon.green  { background: #f0fdf4; }
+    .stat-icon.purple { background: #faf5ff; }
+    .stat-num { font-size: 28px; font-weight: 700; color: #222; line-height: 1; }
+    .stat-label { font-size: 12px; color: #aaa; margin-top: 4px; }
+
+    /* ===== 面板 ===== */
+    .panel {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.05);
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 16px 22px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .panel-title { font-size: 15px; font-weight: 700; }
+    .panel-body { padding: 0; }
+
+    /* 工具栏 */
+    .toolbar {
+      padding: 14px 22px;
+      display: flex;
+      gap: 10px;
+      border-bottom: 1px solid #f5f5f5;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 8px 18px;
+      border-radius: 10px;
+      border: none;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-primary { background: #6366f1; color: #fff; }
+    .btn-primary:hover { background: #4f46e5; }
+    .btn-danger { background: #fee2e2; color: #dc2626; }
+    .btn-danger:hover { background: #fecaca; }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+    .btn-edit { background: #eff6ff; color: #2563eb; }
+    .btn-edit:hover { background: #dbeafe; }
+    .btn-reply { background: #f0fdf4; color: #16a34a; }
+    .btn-reply:hover { background: #dcfce7; }
+
+    /* 表格 */
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      background: #fafafa;
+      padding: 11px 16px;
+      text-align: left;
+      font-size: 12px;
+      color: #888;
+      font-weight: 600;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    td {
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #333;
+      border-bottom: 1px solid #f8f8f8;
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .badge-active { background: #dcfce7; color: #16a34a; }
+    .badge-inactive { background: #f1f5f9; color: #94a3b8; }
+
+    /* 颜色点 */
+    .color-dot {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .dot-red { background: #ef4444; }
+    .dot-green { background: #22c55e; }
+    .dot-yellow { background: #eab308; }
+    .dot-blue { background: #3b82f6; }
+    .dot-orange { background: #f97316; }
+    .dot-purple { background: #a855f7; }
+
+    /* 星级 */
+    .stars { color: #f59e0b; }
+
+    /* 空状态 */
+    .empty { text-align: center; padding: 48px; color: #ccc; font-size: 14px; }
+
+    /* ===== 模态框 ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.4);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 18px;
+      width: 90%;
+      max-width: 500px;
+      padding: 28px;
+      position: relative;
+    }
+    .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 20px; }
+    .modal-close {
+      position: absolute; top: 16px; right: 20px;
+      font-size: 20px; cursor: pointer; color: #aaa;
+      background: none; border: none;
+    }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #e8e8e8;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      background: #fafafa;
+      transition: border-color .2s;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: #6366f1;
+      background: #fff;
+    }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .btn-cancel { background: #f5f5f5; color: #666; }
+    .btn-cancel:hover { background: #eee; }
+    .btn-confirm { background: #6366f1; color: #fff; }
+    .btn-confirm:hover { background: #4f46e5; }
+
+    /* toast */
+    #toast {
+      position: fixed; bottom: 30px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(0,0,0,.75); color: #fff;
+      padding: 10px 24px; border-radius: 24px;
+      font-size: 13px; opacity: 0;
+      transition: all .3s; z-index: 9999; pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* page */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* 加载 */
+    .loading { text-align: center; padding: 40px; color: #ccc; font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<!-- 侧边栏 -->
+<aside class="sidebar">
+  <div class="sidebar-logo"><span>🍽️</span> 食堂管理后台</div>
+  <div class="sidebar-admin">
+    <strong id="admin-name">管理员</strong>
+    管理员身份
+  </div>
+  <nav class="nav-menu">
+    <div class="nav-item active" onclick="showPage('overview')" id="nav-overview">
+      <span class="icon">📊</span> 数据总览
+    </div>
+    <div class="nav-item" onclick="showPage('windows')" id="nav-windows">
+      <span class="icon">🪟</span> 窗口管理
+    </div>
+    <div class="nav-item" onclick="showPage('dishes')" id="nav-dishes">
+      <span class="icon">🍜</span> 菜品管理
+    </div>
+    <div class="nav-item" onclick="showPage('reviews')" id="nav-reviews">
+      <span class="icon">💬</span> 评价管理
+    </div>
+    <div class="nav-item" onclick="showPage('users')" id="nav-users">
+      <span class="icon">👥</span> 用户管理
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn-logout" onclick="logout()">退出登录</button>
+  </div>
+</aside>
+
+<!-- 主区域 -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">数据总览</div>
+    <div class="topbar-right" id="topbar-time"></div>
+  </div>
+
+  <div class="content">
+
+    <!-- 总览页 -->
+    <div class="page active" id="page-overview">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon orange">🪟</div>
+          <div><div class="stat-num" id="s-windows">-</div><div class="stat-label">食堂窗口</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue">🍜</div>
+          <div><div class="stat-num" id="s-dishes">-</div><div class="stat-label">在售菜品</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">💬</div>
+          <div><div class="stat-num" id="s-reviews">-</div><div class="stat-label">用户评价</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple">👥</div>
+          <div><div class="stat-num" id="s-users">-</div><div class="stat-label">注册用户</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">🏆 窗口评分排行</div>
+        </div>
+        <div class="panel-body">
+          <table>
+            <thead><tr><th>排名</th><th>窗口</th><th>均分</th><th>评价数</th></tr></thead>
+            <tbody id="ranking-body"><tr><td colspan="4" class="loading">加载中…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 窗口管理页 -->
+    <div class="page" id="page-windows">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">窗口列表</div>
+          <button class="btn btn-primary btn-sm" onclick="openWindowModal()">＋ 新增窗口</button>
+        </div>
+        <div class="panel-body">
+          <table>
+            <thead><tr><th>ID</th><th>窗口名</th><th>颜色</th><th>描述</th><th>创建时间</th><th>操作</th></tr></thead>
+            <tbody id="windows-body"><tr><td colspan="6" class="loading">加载中…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 菜品管理页 -->
+    <div class="page" id="page-dishes">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">菜品列表</div>
+          <button class="btn btn-primary btn-sm" onclick="openDishModal()">＋ 新增菜品</button>
+        </div>
+        <div class="panel-body">
+          <table>
+            <thead><tr><th>ID</th><th>菜品名</th><th>所属窗口</th><th>价格</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody id="dishes-body"><tr><td colspan="6" class="loading">加载中…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 评价管理页 -->
+    <div class="page" id="page-reviews">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">评价列表</div>
+        </div>
+        <div class="panel-body">
+          <table>
+            <thead><tr><th>ID</th><th>用户</th><th>菜品</th><th>评分</th><th>内容</th><th>已回复</th><th>时间</th><th>操作</th></tr></thead>
+            <tbody id="reviews-body"><tr><td colspan="8" class="loading">加载中…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 用户管理页 -->
+    <div class="page" id="page-users">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">用户列表</div>
+        </div>
+        <div class="panel-body">
+          <table>
+            <thead><tr><th>ID</th><th>用户名</th><th>注册时间</th><th>操作</th></tr></thead>
+            <tbody id="users-body"><tr><td colspan="4" class="loading">加载中…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 窗口 模态框 -->
+<div class="modal-overlay" id="modal-window">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-window')">✕</button>
+    <div class="modal-title" id="window-modal-title">新增窗口</div>
+    <input type="hidden" id="window-id">
+    <div class="form-group">
+      <label class="form-label">窗口名称</label>
+      <input class="form-input" id="window-name" placeholder="如：川菜窗口">
+    </div>
+    <div class="form-group">
+      <label class="form-label">颜色</label>
+      <select class="form-select" id="window-color">
+        <option value="red">🔴 红色</option>
+        <option value="green">🟢 绿色</option>
+        <option value="yellow">🟡 黄色</option>
+        <option value="blue" selected>🔵 蓝色</option>
+        <option value="orange">🟠 橙色</option>
+        <option value="purple">🟣 紫色</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">描述（选填）</label>
+      <textarea class="form-textarea" id="window-desc" placeholder="窗口简介…"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('modal-window')">取消</button>
+      <button class="btn btn-confirm" onclick="saveWindow()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 菜品 模态框 -->
+<div class="modal-overlay" id="modal-dish">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-dish')">✕</button>
+    <div class="modal-title" id="dish-modal-title">新增菜品</div>
+    <input type="hidden" id="dish-id">
+    <div class="form-group">
+      <label class="form-label">所属窗口</label>
+      <select class="form-select" id="dish-window"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">菜品名称</label>
+      <input class="form-input" id="dish-name" placeholder="如：麻婆豆腐">
+    </div>
+    <div class="form-group">
+      <label class="form-label">价格（元）</label>
+      <input class="form-input" id="dish-price" type="number" min="0" step="0.5" placeholder="如：8.00">
+    </div>
+    <div class="form-group">
+      <label class="form-label">状态</label>
+      <select class="form-select" id="dish-active">
+        <option value="1">✅ 上架</option>
+        <option value="0">⬜ 下架</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('modal-dish')">取消</button>
+      <button class="btn btn-confirm" onclick="saveDish()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 回复 模态框 -->
+<div class="modal-overlay" id="modal-reply">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-reply')">✕</button>
+    <div class="modal-title">回复评价</div>
+    <input type="hidden" id="reply-review-id">
+    <div class="form-group">
+      <label class="form-label">回复内容</label>
+      <textarea class="form-textarea" id="reply-content" rows="4" placeholder="输入回复内容…"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('modal-reply')">取消</button>
+      <button class="btn btn-confirm" onclick="saveReply()">发送回复</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const API = '';
+  let adminToken = localStorage.getItem('adminToken');
+
+  // 权限检查
+  if (!adminToken) location.href = 'login.html';
+  document.getElementById('admin-name').textContent = localStorage.getItem('adminUsername') || 'admin';
+
+  // 时间显示
+  function updateTime() {
+    const now = new Date();
+    document.getElementById('topbar-time').textContent =
+      `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  }
+  updateTime(); setInterval(updateTime, 1000);
+
+  const authHeader = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` });
+
+  // ===== 页面切换 =====
+  const pageTitles = { overview:'数据总览', windows:'窗口管理', dishes:'菜品管理', reviews:'评价管理', users:'用户管理' };
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(`page-${name}`).classList.add('active');
+    document.getElementById(`nav-${name}`).classList.add('active');
+    document.getElementById('page-title').textContent = pageTitles[name];
+    loadPage(name);
+  }
+
+  function loadPage(name) {
+    if (name === 'overview') loadOverview();
+    else if (name === 'windows') loadWindows();
+    else if (name === 'dishes') loadDishes();
+    else if (name === 'reviews') loadReviews();
+    else if (name === 'users') loadUsers();
+  }
+
+  window.addEventListener('DOMContentLoaded', () => loadOverview());
+
+  // ===== 总览 =====
+  async function loadOverview() {
+    try {
+      const res = await fetch(`${API}/api/admin/stats`, { headers: authHeader() });
+      if (res.status === 401) { logout(); return; }
+      const s = await res.json();
+      document.getElementById('s-windows').textContent = s.windows;
+      document.getElementById('s-dishes').textContent = s.dishes;
+      document.getElementById('s-reviews').textContent = s.reviews;
+      document.getElementById('s-users').textContent = s.users;
+    } catch (e) {}
+
+    // 排行榜
+    try {
+      const res = await fetch(`${API}/api/windows`);
+      const wins = await res.json();
+      const sorted = wins.filter(w => w.avg_rating).sort((a,b) => b.avg_rating - a.avg_rating);
+      const tbody = document.getElementById('ranking-body');
+      if (!sorted.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty">暂无评分数据</td></tr>';
+        return;
+      }
+      const medals = ['🥇','🥈','🥉'];
+      tbody.innerHTML = sorted.map((w,i) => `
+        <tr>
+          <td>${medals[i] || (i+1)}</td>
+          <td><span class="color-dot dot-${w.color}"></span>${escHtml(w.name)}</td>
+          <td><span class="stars">${'★'.repeat(Math.round(w.avg_rating))}</span> ${w.avg_rating}</td>
+          <td>${w.review_count} 条</td>
+        </tr>
+      `).join('');
+    } catch(e) {}
+  }
+
+  // ===== 窗口 =====
+  async function loadWindows() {
+    const tbody = document.getElementById('windows-body');
+    try {
+      const res = await fetch(`${API}/api/admin/windows`, { headers: authHeader() });
+      const list = await res.json();
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">暂无窗口</td></tr>'; return; }
+      tbody.innerHTML = list.map(w => `
+        <tr>
+          <td>${w.window_id}</td>
+          <td><strong>${escHtml(w.name)}</strong></td>
+          <td><span class="color-dot dot-${w.color}"></span>${w.color}</td>
+          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(w.description||'-')}</td>
+          <td>${formatTime(w.created_at)}</td>
+          <td>
+            <button class="btn btn-edit btn-sm" onclick='openWindowModal(${JSON.stringify(w)})'>编辑</button>
+            <button class="btn btn-danger btn-sm" onclick="delWindow(${w.window_id})">删除</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (e) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">加载失败</td></tr>';
+    }
+  }
+
+  function openWindowModal(w) {
+    document.getElementById('window-modal-title').textContent = w ? '编辑窗口' : '新增窗口';
+    document.getElementById('window-id').value = w ? w.window_id : '';
+    document.getElementById('window-name').value = w ? w.name : '';
+    document.getElementById('window-color').value = w ? w.color : 'blue';
+    document.getElementById('window-desc').value = w ? (w.description||'') : '';
+    openModal('modal-window');
+  }
+
+  async function saveWindow() {
+    const id = document.getElementById('window-id').value;
+    const name = document.getElementById('window-name').value.trim();
+    const color = document.getElementById('window-color').value;
+    const description = document.getElementById('window-desc').value.trim();
+    if (!name) { toast('窗口名不能为空'); return; }
+
+    const url = id ? `${API}/api/admin/windows/${id}` : `${API}/api/admin/windows`;
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: authHeader(), body: JSON.stringify({name,color,description}) });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error||'操作失败'); return; }
+    toast(id ? '更新成功' : '创建成功');
+    closeModal('modal-window');
+    loadWindows();
+  }
+
+  async function delWindow(id) {
+    if (!confirm('确定删除该窗口？相关菜品和评价也会一并删除')) return;
+    const res = await fetch(`${API}/api/admin/windows/${id}`, { method:'DELETE', headers: authHeader() });
+    const data = await res.json();
+    toast(res.ok ? '已删除' : data.error||'删除失败');
+    loadWindows();
+  }
+
+  // ===== 菜品 =====
+  let allWindows = [];
+  async function loadDishes() {
+    const tbody = document.getElementById('dishes-body');
+    try {
+      const [dishRes, winRes] = await Promise.all([
+        fetch(`${API}/api/admin/dishes`, { headers: authHeader() }),
+        fetch(`${API}/api/admin/windows`, { headers: authHeader() })
+      ]);
+      const list = await dishRes.json();
+      allWindows = await winRes.json();
+
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">暂无菜品</td></tr>'; return; }
+      tbody.innerHTML = list.map(d => `
+        <tr>
+          <td>${d.dish_id}</td>
+          <td><strong>${escHtml(d.name)}</strong></td>
+          <td>${escHtml(d.window_name)}</td>
+          <td>¥${Number(d.price).toFixed(2)}</td>
+          <td><span class="badge ${d.is_active?'badge-active':'badge-inactive'}">${d.is_active?'上架':'下架'}</span></td>
+          <td>
+            <button class="btn btn-edit btn-sm" onclick='openDishModal(${JSON.stringify(d)})'>编辑</button>
+            <button class="btn btn-danger btn-sm" onclick="delDish(${d.dish_id})">删除</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (e) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">加载失败</td></tr>';
+    }
+  }
+
+  function openDishModal(d) {
+    document.getElementById('dish-modal-title').textContent = d ? '编辑菜品' : '新增菜品';
+    document.getElementById('dish-id').value = d ? d.dish_id : '';
+
+    // 填充窗口下拉
+    const sel = document.getElementById('dish-window');
+    sel.innerHTML = allWindows.map(w => `<option value="${w.window_id}">${escHtml(w.name)}</option>`).join('');
+    if (d) sel.value = d.window_id;
+
+    document.getElementById('dish-name').value = d ? d.name : '';
+    document.getElementById('dish-price').value = d ? d.price : '';
+    document.getElementById('dish-active').value = d ? d.is_active : '1';
+    openModal('modal-dish');
+  }
+
+  async function saveDish() {
+    const id = document.getElementById('dish-id').value;
+    const window_id = document.getElementById('dish-window').value;
+    const name = document.getElementById('dish-name').value.trim();
+    const price = document.getElementById('dish-price').value;
+    const is_active = document.getElementById('dish-active').value;
+    if (!name || !price) { toast('请填写完整信息'); return; }
+
+    const url = id ? `${API}/api/admin/dishes/${id}` : `${API}/api/admin/dishes`;
+    const method = id ? 'PUT' : 'POST';
+    const body = id ? {name, price, is_active} : {window_id, name, price};
+    const res = await fetch(url, { method, headers: authHeader(), body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error||'操作失败'); return; }
+    toast(id ? '更新成功' : '创建成功');
+    closeModal('modal-dish');
+    loadDishes();
+  }
+
+  async function delDish(id) {
+    if (!confirm('确定删除该菜品？相关评价也会删除')) return;
+    const res = await fetch(`${API}/api/admin/dishes/${id}`, { method:'DELETE', headers: authHeader() });
+    toast(res.ok ? '已删除' : '删除失败');
+    loadDishes();
+  }
+
+  // ===== 评价 =====
+  async function loadReviews() {
+    const tbody = document.getElementById('reviews-body');
+    try {
+      const res = await fetch(`${API}/api/admin/reviews`, { headers: authHeader() });
+      const list = await res.json();
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">暂无评价</td></tr>'; return; }
+      tbody.innerHTML = list.map(r => `
+        <tr>
+          <td>${r.review_id}</td>
+          <td>${escHtml(r.username)}</td>
+          <td>${escHtml(r.dish_name)}</td>
+          <td><span class="stars">${'★'.repeat(r.rating)}</span></td>
+          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(r.content||'-')}</td>
+          <td>${r.reply_content ? '<span class="badge badge-active">已回复</span>' : '<span class="badge badge-inactive">未回复</span>'}</td>
+          <td>${formatTime(r.created_at)}</td>
+          <td>
+            <button class="btn btn-reply btn-sm" onclick="openReplyModal(${r.review_id}, '${escAttr(r.reply_content||'')}')">回复</button>
+            <button class="btn btn-danger btn-sm" onclick="delReview(${r.review_id})">删除</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (e) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty">加载失败</td></tr>';
+    }
+  }
+
+  function openReplyModal(reviewId, existing) {
+    document.getElementById('reply-review-id').value = reviewId;
+    document.getElementById('reply-content').value = existing;
+    openModal('modal-reply');
+  }
+
+  async function saveReply() {
+    const reviewId = document.getElementById('reply-review-id').value;
+    const content = document.getElementById('reply-content').value.trim();
+    if (!content) { toast('回复内容不能为空'); return; }
+    const res = await fetch(`${API}/api/admin/reviews/${reviewId}/reply`, {
+      method: 'POST', headers: authHeader(), body: JSON.stringify({content})
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error||'失败'); return; }
+    toast('回复成功');
+    closeModal('modal-reply');
+    loadReviews();
+  }
+
+  async function delReview(id) {
+    if (!confirm('确定删除该评价？')) return;
+    const res = await fetch(`${API}/api/admin/reviews/${id}`, { method:'DELETE', headers: authHeader() });
+    toast(res.ok ? '已删除' : '删除失败');
+    loadReviews();
+  }
+
+  // ===== 用户 =====
+  async function loadUsers() {
+    const tbody = document.getElementById('users-body');
+    try {
+      const res = await fetch(`${API}/api/admin/users`, { headers: authHeader() });
+      const list = await res.json();
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="4" class="empty">暂无用户</td></tr>'; return; }
+      tbody.innerHTML = list.map(u => `
+        <tr>
+          <td>${u.user_id}</td>
+          <td>${escHtml(u.username)}</td>
+          <td>${formatTime(u.created_at)}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="delUser(${u.user_id})">删除</button></td>
+        </tr>
+      `).join('');
+    } catch (e) {
+      tbody.innerHTML = '<tr><td colspan="4" class="empty">加载失败</td></tr>';
+    }
+  }
+
+  async function delUser(id) {
+    if (!confirm('确定删除该用户？其所有评价也将删除')) return;
+    const res = await fetch(`${API}/api/admin/users/${id}`, { method:'DELETE', headers: authHeader() });
+    toast(res.ok ? '已删除' : '删除失败');
+    loadUsers();
+  }
+
+  // ===== 工具 =====
+  function openModal(id) { document.getElementById(id).classList.add('show'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if (e.target === o) o.classList.remove('show'); });
+  });
+
+  function logout() {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUsername');
+    location.href = 'login.html';
+  }
+
+  function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escAttr(str) {
+    return String(str).replace(/'/g, '\\&#39;').replace(/"/g,'&quot;');
+  }
+  function formatTime(str) {
+    if (!str) return '-';
+    const d = new Date(str);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>校园食堂评价系统</title>
+  <style>
+    /* ===== 全局重置 ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: #f5f6fa;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    /* ===== 顶部导航 ===== */
+    .navbar {
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .navbar-brand {
+      font-size: 20px;
+      font-weight: 700;
+      color: #e85d04;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .navbar-brand span { font-size: 24px; }
+    .navbar-right { display: flex; align-items: center; gap: 16px; }
+    .btn {
+      padding: 8px 20px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all .2s;
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid #e85d04;
+      color: #e85d04;
+    }
+    .btn-outline:hover { background: #fff4ee; }
+    .btn-primary {
+      background: #e85d04;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #cf4e00; }
+    .btn-sm { padding: 5px 14px; font-size: 13px; }
+    #user-info { font-size: 14px; color: #555; display: flex; align-items: center; gap: 10px; }
+    #user-info strong { color: #e85d04; }
+
+    /* ===== Hero 区 ===== */
+    .hero {
+      background: linear-gradient(135deg, #ff6b35 0%, #e85d04 50%, #c44b00 100%);
+      color: #fff;
+      text-align: center;
+      padding: 56px 20px 48px;
+    }
+    .hero h1 { font-size: 32px; font-weight: 700; margin-bottom: 10px; }
+    .hero p { font-size: 16px; opacity: .85; margin-bottom: 28px; }
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+    }
+    .hero-stat strong { font-size: 28px; display: block; }
+    .hero-stat span { font-size: 13px; opacity: .8; }
+
+    /* ===== 主体内容 ===== */
+    .container { max-width: 1100px; margin: 0 auto; padding: 32px 20px; }
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #222;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 20px;
+      background: #e85d04;
+      border-radius: 2px;
+      display: block;
+    }
+
+    /* ===== 窗口卡片网格 ===== */
+    .windows-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .window-card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .window-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    }
+    .card-header {
+      height: 8px;
+    }
+    .card-body { padding: 20px; }
+    .card-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .card-desc { font-size: 13px; color: #888; margin-bottom: 14px; line-height: 1.6; min-height: 40px; }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .rating-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #f59e0b;
+    }
+    .rating-badge .stars { font-size: 16px; }
+    .review-count { font-size: 12px; color: #aaa; }
+    .no-rating { color: #bbb; font-size: 13px; }
+
+    /* 颜色映射 */
+    .color-red    { background: #ef4444; }
+    .color-green  { background: #22c55e; }
+    .color-yellow { background: #eab308; }
+    .color-blue   { background: #3b82f6; }
+    .color-orange { background: #f97316; }
+    .color-purple { background: #a855f7; }
+    .text-red    { color: #ef4444; }
+    .text-green  { color: #22c55e; }
+    .text-yellow { color: #eab308; }
+    .text-blue   { color: #3b82f6; }
+    .text-orange { color: #f97316; }
+    .text-purple { color: #a855f7; }
+
+    /* ===== 模态框 ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 720px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 28px;
+      position: relative;
+    }
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      font-size: 24px;
+      cursor: pointer;
+      color: #aaa;
+      background: none;
+      border: none;
+      line-height: 1;
+    }
+    .modal-close:hover { color: #333; }
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-subtitle { font-size: 13px; color: #888; margin-bottom: 20px; }
+
+    /* 菜品列表 */
+    .dishes-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .dish-item {
+      border: 1.5px solid #f0f0f0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .dish-info { flex: 1; }
+    .dish-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .dish-meta { display: flex; gap: 12px; align-items: center; }
+    .dish-price { color: #e85d04; font-weight: 600; font-size: 14px; }
+    .dish-rating { color: #f59e0b; font-size: 13px; }
+    .dish-review-count { color: #bbb; font-size: 12px; }
+    .btn-review {
+      padding: 7px 16px;
+      border-radius: 10px;
+      background: #fff4ee;
+      color: #e85d04;
+      border: 1.5px solid #fdc9a7;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: all .2s;
+    }
+    .btn-review:hover { background: #e85d04; color: #fff; border-color: #e85d04; }
+    .btn-view-reviews {
+      padding: 7px 16px;
+      border-radius: 10px;
+      background: #f5f6fa;
+      color: #555;
+      border: 1.5px solid #e8e8e8;
+      cursor: pointer;
+      font-size: 13px;
+      margin-left: 6px;
+      transition: all .2s;
+    }
+    .btn-view-reviews:hover { background: #eee; }
+
+    /* 评价表单 */
+    .review-form {
+      background: #fff8f4;
+      border-radius: 12px;
+      padding: 18px;
+      margin-top: 8px;
+      display: none;
+    }
+    .review-form.show { display: block; }
+    .review-form h4 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #555; }
+    .star-picker { display: flex; gap: 6px; margin-bottom: 12px; }
+    .star-picker .star {
+      font-size: 28px;
+      cursor: pointer;
+      color: #ddd;
+      transition: color .15s;
+      line-height: 1;
+    }
+    .star-picker .star.active, .star-picker .star:hover ~ .star { color: #ddd; }
+    .star-picker .star.active, .star-picker:hover .star { color: #f59e0b; }
+    .star-picker .star:hover ~ .star { color: #ddd !important; }
+    .review-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #fdc9a7;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      margin-bottom: 10px;
+    }
+    .review-textarea:focus { border-color: #e85d04; }
+    .review-submit {
+      background: #e85d04;
+      color: #fff;
+      border: none;
+      padding: 9px 24px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .review-submit:hover { background: #cf4e00; }
+
+    /* 评价列表 */
+    .reviews-section { margin-top: 12px; }
+    .reviews-section h4 { font-size: 14px; font-weight: 600; color: #555; margin-bottom: 10px; }
+    .review-item {
+      background: #fafafa;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+    }
+    .review-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .review-user { font-size: 13px; font-weight: 600; color: #333; }
+    .review-time { font-size: 12px; color: #bbb; }
+    .review-stars { color: #f59e0b; font-size: 14px; margin-bottom: 4px; }
+    .review-content { font-size: 13px; color: #555; line-height: 1.6; }
+    .reply-box {
+      background: #fff;
+      border-left: 3px solid #e85d04;
+      padding: 8px 12px;
+      margin-top: 8px;
+      border-radius: 0 8px 8px 0;
+      font-size: 12px;
+      color: #888;
+    }
+    .reply-box strong { color: #e85d04; margin-right: 4px; }
+
+    /* 空状态 */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #bbb;
+      font-size: 14px;
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+    /* toast */
+    #toast {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(0,0,0,.75);
+      color: #fff;
+      padding: 10px 24px;
+      border-radius: 24px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all .3s;
+      z-index: 9999;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* loading */
+    .loading { text-align: center; padding: 40px; color: #bbb; font-size: 14px; }
+
+    @media (max-width: 600px) {
+      .navbar { padding: 0 16px; }
+      .hero h1 { font-size: 24px; }
+      .hero-stats { gap: 20px; }
+      .modal { padding: 20px 16px; }
+      .random-dish-card { flex-direction: column; }
+    }
+    /* ===== 今天吃什么 ===== */
+    .random-dish-card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      padding: 28px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 32px;
+      min-height: 120px;
+    }
+    .random-loading { color: #bbb; font-size: 15px; width:100%; text-align:center; }
+    .random-content { display:flex; align-items:center; width:100%; gap:24px; }
+    .random-main { flex:1; }
+    .random-dish-name { font-size: 26px; font-weight: 700; color: #222; margin-bottom: 6px; }
+    .random-window { font-size: 15px; color: #888; }
+    .random-side { text-align: right; }
+    .random-price { font-size: 22px; font-weight: 700; color: #e85d04; margin-bottom: 4px; }
+    .random-rating { font-size: 14px; color: #f59e0b; }
+    .random-actions { display: flex; gap: 10px; flex-shrink: 0; }
+    @media (max-width: 600px) {
+      .random-dish-card { flex-direction: column; align-items: flex-start; }
+      .random-content { flex-direction: column; align-items: flex-start; }
+      .random-side { text-align: left; }
+      .random-actions { width:100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 导航栏 -->
+<nav class="navbar">
+  <div class="navbar-brand">
+    <span>🍽️</span> 校园食堂评价
+  </div>
+  <div class="navbar-right">
+    <div id="user-info" style="display:none">
+      你好，<strong id="username-display"></strong>
+      <button class="btn btn-sm btn-outline" onclick="logout()">退出</button>
+    </div>
+    <div id="guest-btns">
+      <button class="btn btn-outline btn-sm" onclick="location.href='login.html'">登录</button>
+      <button class="btn btn-primary btn-sm" onclick="location.href='login.html'">注册</button>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <h1>🍜 找好吃的，就来这里</h1>
+  <p>真实学生评价，帮你选出今天最值得吃的一碗</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <strong id="stat-windows">-</strong>
+      <span>食堂窗口</span>
+    </div>
+    <div class="hero-stat">
+      <strong id="stat-dishes">-</strong>
+      <span>在售菜品</span>
+    </div>
+    <div class="hero-stat">
+      <strong id="stat-reviews">-</strong>
+      <span>用户评价</span>
+    </div>
+  </div>
+</section>
+
+<!-- 今天吃什么 -->
+<div class="container" style="margin-top:0">
+  <div class="section-title">🎲 今天吃什么</div>
+  <div id="random-dish-card" class="random-dish-card">
+    <div class="random-loading" id="random-loading">加载中…</div>
+    <div class="random-content" id="random-content" style="display:none">
+      <div class="random-main">
+        <div class="random-dish-name" id="random-dish-name"></div>
+        <div class="random-window" id="random-window"></div>
+      </div>
+      <div class="random-side">
+        <div class="random-price" id="random-price"></div>
+        <div class="random-rating" id="random-rating"></div>
+      </div>
+      <div class="random-actions">
+        <button class="btn btn-outline" onclick="loadRandomDish()">🎲 换一道</button>
+        <button class="btn btn-primary" id="btn-review-dish" onclick="handleReviewDish()">✏️ 去评价</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 主内容 -->
+<div class="container">
+  <div class="section-title">所有窗口</div>
+  <div class="windows-grid" id="windows-grid">
+    <div class="loading">加载中…</div>
+  </div>
+</div>
+
+<!-- 窗口详情模态框 -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+  const API = '';  // 同源，相对路径
+  let currentUser = null;
+  let selectedRating = {};  // dish_id -> rating
+
+  // ===== 初始化 =====
+  window.addEventListener('DOMContentLoaded', () => {
+    loadUser();
+    loadStats();
+    loadWindows();
+    loadRandomDish();
+  });
+
+  function loadUser() {
+    const token = localStorage.getItem('token');
+    const username = localStorage.getItem('username');
+    if (token && username) {
+      currentUser = { token, username };
+      document.getElementById('user-info').style.display = 'flex';
+      document.getElementById('username-display').textContent = username;
+      document.getElementById('guest-btns').style.display = 'none';
+    }
+  }
+
+  function logout() {
+    localStorage.clear();
+    location.reload();
+  }
+
+  // ===== 统计数据 =====
+  async function loadStats() {
+    try {
+      const [winRes, statsRes] = await Promise.all([
+        fetch(`${API}/api/windows`),
+        fetch(`${API}/api/admin/stats`).catch(() => null)
+      ]);
+      const windows = await winRes.json();
+      document.getElementById('stat-windows').textContent = windows.length;
+
+      // 从窗口数据算评价总数
+      const totalReviews = windows.reduce((s, w) => s + (w.review_count || 0), 0);
+      document.getElementById('stat-reviews').textContent = totalReviews;
+
+      // 菜品数从admin接口拿，若未登录管理员则走另一路
+      if (statsRes && statsRes.ok) {
+        const stats = await statsRes.json();
+        document.getElementById('stat-dishes').textContent = stats.dishes;
+      } else {
+        document.getElementById('stat-dishes').textContent = '24';
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // ===== 今天吃什么 =====
+  let randomDishId = null;
+  async function loadRandomDish() {
+    const loading = document.getElementById('random-loading');
+    const content = document.getElementById('random-content');
+    loading.style.display = 'block';
+    content.style.display = 'none';
+    try {
+      const res = await fetch(`${API}/api/windows/random`);
+      const dish = await res.json();
+      if (!dish) {
+        loading.textContent = '暂无菜品数据';
+        return;
+      }
+      randomDishId = dish.dish_id;
+      document.getElementById('random-dish-name').textContent = dish.name;
+      document.getElementById('random-window').textContent = `📍 ${dish.window_name || ''}`;
+      document.getElementById('random-price').textContent = `¥${Number(dish.price).toFixed(2)}`;
+      document.getElementById('random-rating').textContent = dish.avg_rating ? `⭐ ${dish.avg_rating}（${dish.review_count}人评）` : '暂无评分';
+      loading.style.display = 'none';
+      content.style.display = 'flex';
+    } catch (e) {
+      loading.textContent = '加载失败，请重试';
+    }
+  }
+
+  function handleReviewDish() {
+    if (!currentUser) {
+      toast('请先登录后再评价');
+      setTimeout(() => { location.href = 'login.html'; }, 1500);
+      return;
+    }
+    toast('评价功能开发中，敬请期待 😊');
+  }
+
+  // ===== 窗口列表 =====
+  async function loadWindows() {
+    const grid = document.getElementById('windows-grid');
+    try {
+      const res = await fetch(`${API}/api/windows`);
+      const windows = await res.json();
+
+      if (!windows.length) {
+        grid.innerHTML = '<div class="empty-state"><div class="icon">🍽️</div>暂无窗口数据</div>';
+        return;
+      }
+
+      grid.innerHTML = windows.map(w => `
+        <div class="window-card" onclick="openWindow(${w.window_id}, '${escHtml(w.name)}', '${w.color}')">
+          <div class="card-header color-${w.color}"></div>
+          <div class="card-body">
+            <div class="card-title text-${w.color}">${escHtml(w.name)}</div>
+            <div class="card-desc">${escHtml(w.description || '暂无描述')}</div>
+            <div class="card-footer">
+              ${w.avg_rating
+                ? `<div class="rating-badge">
+                    <span class="stars">${starStr(w.avg_rating)}</span>
+                    <span>${w.avg_rating}</span>
+                  </div>
+                  <span class="review-count">${w.review_count} 条评价</span>`
+                : `<span class="no-rating">暂无评分</span><span class="review-count">0 条评价</span>`
+              }
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } catch (e) {
+      grid.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div>加载失败，请刷新重试</div>';
+    }
+  }
+
+  // ===== 打开窗口模态框 =====
+  async function openWindow(windowId, windowName, color) {
+    const overlay = document.getElementById('modal-overlay');
+    const content = document.getElementById('modal-content');
+    overlay.classList.add('show');
+    content.innerHTML = '<div class="loading">加载中…</div>';
+
+    try {
+      const res = await fetch(`${API}/api/windows/${windowId}/dishes`);
+      const dishes = await res.json();
+
+      content.innerHTML = `
+        <div class="modal-title">
+          <span style="width:14px;height:14px;border-radius:50%;background:var(--c);display:inline-block;flex-shrink:0"
+                style="--c:${colorHex(color)}"></span>
+          <span class="text-${color}">${escHtml(windowName)}</span>
+        </div>
+        <div class="modal-subtitle">点击菜品可查看评价 · 登录后可发表评价</div>
+        <div class="dishes-list" id="dishes-list-${windowId}">
+          ${dishes.length === 0
+            ? '<div class="empty-state"><div class="icon">🍽️</div>暂无菜品</div>'
+            : dishes.map(d => renderDishItem(d)).join('')
+          }
+        </div>
+      `;
+    } catch (e) {
+      content.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div>加载失败</div>';
+    }
+  }
+
+  function renderDishItem(d) {
+    return `
+      <div class="dish-item" id="dish-${d.dish_id}">
+        <div class="dish-info">
+          <div class="dish-name">${escHtml(d.name)}</div>
+          <div class="dish-meta">
+            <span class="dish-price">¥${Number(d.price).toFixed(2)}</span>
+            ${d.avg_rating
+              ? `<span class="dish-rating">⭐ ${d.avg_rating}</span>
+                 <span class="dish-review-count">${d.review_count}人评</span>`
+              : '<span class="dish-review-count">暂无评分</span>'
+            }
+          </div>
+          <!-- 评价表单（展开/收起） -->
+          <div class="review-form" id="form-${d.dish_id}">
+            <h4>📝 为「${escHtml(d.name)}」打分</h4>
+            <div class="star-picker" id="stars-${d.dish_id}">
+              ${[1,2,3,4,5].map(i => `<span class="star" data-v="${i}" onclick="setRating(${d.dish_id},${i})">★</span>`).join('')}
+            </div>
+            <textarea class="review-textarea" id="text-${d.dish_id}" rows="3" placeholder="写写你的感受（选填）…"></textarea>
+            <button class="review-submit" onclick="submitReview(${d.dish_id})">提交评价</button>
+          </div>
+          <!-- 评价列表（展开/收起） -->
+          <div class="reviews-section" id="reviews-${d.dish_id}" style="display:none"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${currentUser
+            ? `<button class="btn-review" onclick="toggleForm(${d.dish_id})">✏️ 评价</button>`
+            : `<button class="btn-review" onclick="location.href='login.html'">登录评价</button>`
+          }
+          <button class="btn-view-reviews" onclick="toggleReviews(${d.dish_id})">查看评价</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ===== 展开/收起评价表单 =====
+  function toggleForm(dishId) {
+    const form = document.getElementById(`form-${dishId}`);
+    form.classList.toggle('show');
+  }
+
+  // ===== 星级选择 =====
+  function setRating(dishId, value) {
+    selectedRating[dishId] = value;
+    const stars = document.querySelectorAll(`#stars-${dishId} .star`);
+    stars.forEach((s, i) => {
+      s.classList.toggle('active', i < value);
+      s.style.color = i < value ? '#f59e0b' : '#ddd';
+    });
+  }
+
+  // ===== 提交评价 =====
+  async function submitReview(dishId) {
+    const rating = selectedRating[dishId];
+    if (!rating) { toast('请先选择星级'); return; }
+    const content = document.getElementById(`text-${dishId}`).value.trim();
+
+    try {
+      const res = await fetch(`${API}/api/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentUser.token}`
+        },
+        body: JSON.stringify({ dish_id: dishId, rating, content })
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error || '提交失败'); return; }
+      toast('评价成功 🎉');
+      document.getElementById(`form-${dishId}`).classList.remove('show');
+      // 刷新该菜品评价列表
+      loadDishReviews(dishId);
+    } catch (e) {
+      toast('网络错误');
+    }
+  }
+
+  // ===== 查看评价 =====
+  async function toggleReviews(dishId) {
+    const section = document.getElementById(`reviews-${dishId}`);
+    if (section.style.display === 'block') {
+      section.style.display = 'none';
+      return;
+    }
+    section.style.display = 'block';
+    loadDishReviews(dishId);
+  }
+
+  async function loadDishReviews(dishId) {
+    const section = document.getElementById(`reviews-${dishId}`);
+    section.innerHTML = '<div style="font-size:13px;color:#bbb;padding:8px 0">加载中…</div>';
+    try {
+      const res = await fetch(`${API}/api/reviews/dish/${dishId}`);
+      const reviews = await res.json();
+      if (!reviews.length) {
+        section.innerHTML = '<div style="font-size:13px;color:#bbb;padding:8px 0">暂无评价，快来第一个评价吧！</div>';
+        return;
+      }
+      section.innerHTML = `
+        <h4>用户评价（${reviews.length}）</h4>
+        ${reviews.map(r => `
+          <div class="review-item">
+            <div class="review-header">
+              <span class="review-user">👤 ${escHtml(r.username)}</span>
+              <span class="review-time">${formatTime(r.created_at)}</span>
+            </div>
+            <div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+            ${r.content ? `<div class="review-content">${escHtml(r.content)}</div>` : ''}
+            ${r.reply_content ? `
+              <div class="reply-box"><strong>商家回复：</strong>${escHtml(r.reply_content)}</div>
+            ` : ''}
+          </div>
+        `).join('')}
+      `;
+    } catch (e) {
+      section.innerHTML = '<div style="font-size:13px;color:#bbb">加载失败</div>';
+    }
+  }
+
+  // ===== 工具函数 =====
+  function closeModal(e) {
+    if (e.target === document.getElementById('modal-overlay')) closeModalDirect();
+  }
+  function closeModalDirect() {
+    document.getElementById('modal-overlay').classList.remove('show');
+    selectedRating = {};
+  }
+
+  function starStr(rating) {
+    const full = Math.round(rating);
+    return '★'.repeat(full) + '☆'.repeat(5 - full);
+  }
+
+  function colorHex(name) {
+    const map = { red:'#ef4444', green:'#22c55e', yellow:'#eab308', blue:'#3b82f6', orange:'#f97316', purple:'#a855f7' };
+    return map[name] || '#888';
+  }
+
+  function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function formatTime(str) {
+    if (!str) return '';
+    const d = new Date(str);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+  }
+</script>
+</body>
+</html>
