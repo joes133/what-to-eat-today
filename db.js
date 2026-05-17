@@ -1,7 +1,8 @@
 const mysql = require('mysql2/promise');
 
 // 优先使用 Railway 提供的完整连接字符串
-const mysqlUrl = process.env.MYSQL_URL || process.env.DATABASE_URL;
+// 内网地址优先，公网地址作为备选
+const mysqlUrl = process.env.MYSQL_URL || process.env.DATABASE_URL || process.env.MYSQL_PUBLIC_URL;
 
 let pool;
 if (mysqlUrl) {
