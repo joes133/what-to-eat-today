@@ -74,4 +74,23 @@ router.post('/admin/login', async (req, res) => {
   }
 });
 
+// POST /api/auth/admin/reset-password - 临时密码重置接口（用完删除）
+router.post('/admin/reset-password', async (req, res) => {
+  const { secret, newPassword } = req.body;
+  // 简单保护：secret 需匹配环境变量或固定值
+  if (secret !== 'sjkks133-reset') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ error: '密码至少6位' });
+  }
+  try {
+    const hash = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE admins SET password_hash = ? WHERE username = ?', [hash, 'admin']);
+    res.json({ message: '密码已重置', hash });
+  } catch (e) {
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
 module.exports = router;
