@@ -1,12 +1,12 @@
 const mysql = require('mysql2/promise');
 
-// Railway 生产环境配置
+// 使用环境变量，提供默认值（用于本地开发）
 const pool = mysql.createPool({
-  host: 'mysql.railway.internal',
-  port: 3306,
-  user: 'root',
-  password: 'IbSQYTDiFwBUcJDlIFLEiLDZOEOEWILH',
-  database: 'railway',
+  host: process.env.DB_HOST || 'mysql.railway.internal',
+  port: process.env.DB_PORT || 3306,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'IbSQYTDiFwBUcJDlIFLEiLDZOEOEWILH',
+  database: process.env.DB_NAME || 'railway',
   charset: 'utf8mb4',
   waitForConnections: true,
   connectionLimit: 10,
